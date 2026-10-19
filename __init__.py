@@ -23,6 +23,7 @@ from .openviking_client import (
     format_hit,
     is_under,
     normalize_uri,
+    resolve_api_key,
     safe_name,
     truncate,
 )
@@ -38,6 +39,7 @@ def _default_config() -> dict[str, Any]:
     return {
         "base_url": DEFAULT_BASE_URL,
         "api_key": "",
+        "api_key_source": "",
         "timeout_s": 30.0,
         "memory_root": DEFAULT_MEMORY_ROOT,
         "max_chars": 2000,
@@ -64,10 +66,14 @@ class OpenVikingBridgePlugin(NekoPluginBase):
         if not isinstance(section, dict):
             section = {}
         cfg = _default_config()
+        # 配置里没填 key 就回退到 OpenViking 自己的 ovcli.conf，
+        # 用户不必把 key 抄一份到插件配置里。
+        api_key, key_source = resolve_api_key(str(section.get("api_key") or ""))
         cfg.update(
             {
                 "base_url": str(section.get("base_url") or cfg["base_url"]),
-                "api_key": str(section.get("api_key") or ""),
+                "api_key": api_key,
+                "api_key_source": key_source,
                 "timeout_s": float(section.get("timeout_s") or cfg["timeout_s"]),
                 "memory_root": str(section.get("memory_root") or cfg["memory_root"]),
                 "max_chars": int(section.get("max_chars") or cfg["max_chars"]),
@@ -87,7 +93,11 @@ class OpenVikingBridgePlugin(NekoPluginBase):
     @lifecycle(id="startup")
     async def on_startup(self, **_):
         await self._load_config()
-        self.logger.info("openviking_bridge ready (base_url=%s)", self._cfg["base_url"])
+        self.logger.info(
+            "openviking_bridge ready (base_url=%s, api_key from %s)",
+            self._cfg["base_url"],
+            self._cfg["api_key_source"],
+        )
         return Ok({"status": "ready", "base_url": self._cfg["base_url"]})
 
     @lifecycle(id="config_change")
@@ -119,6 +129,7 @@ class OpenVikingBridgePlugin(NekoPluginBase):
                 "version": str(info.get("version") or ""),
                 "auth_mode": str(info.get("auth_mode") or ""),
                 "base_url": self._cfg["base_url"],
+                "api_key_source": self._cfg["api_key_source"],
             }
         )
 

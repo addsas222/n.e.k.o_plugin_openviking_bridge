@@ -7,10 +7,12 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.error
 import urllib.parse
 import urllib.request
+from pathlib import Path
 
 SCHEME = "viking://"
 _ALLOWED_URL_SCHEMES = ("http://", "https://")
@@ -81,6 +83,45 @@ def format_hit(hit: dict, max_chars: int = 2000) -> dict:
         "score": hit.get("score"),
         "abstract": truncate(str(hit.get("abstract") or ""), max_chars),
     }
+
+
+CLI_CONFIG_ENV = "OPENVIKING_CLI_CONFIG_FILE"
+
+
+def default_cli_config_path() -> Path:
+    """OpenViking 官方客户端配置文件的位置。
+
+    与 OpenViking 自己的 Python/CLI 客户端保持一致：优先读环境变量，
+    否则读 ~/.openviking/ovcli.conf。
+    """
+    override = os.environ.get(CLI_CONFIG_ENV, "").strip()
+    if override:
+        return Path(override)
+    return Path.home() / ".openviking" / "ovcli.conf"
+
+
+def resolve_api_key(configured: str, cli_config: Path | None = None) -> tuple[str, str]:
+    """决定这次用哪把 API Key，并说明来源。
+
+    插件配置里填了就用它；没填则回退到 OpenViking 自己的 ovcli.conf ——
+    这样用户不必把 key 抄一份到插件配置里（手动抄写容易写坏文件，
+    而且 key 轮换后两处会不一致）。
+
+    返回 (key, 来源)。来源取值："plugin config" / "ovcli.conf" / "none"，
+    只用于日志与体检输出，不含 key 本身。
+    """
+    text = (configured or "").strip()
+    if text:
+        return text, "plugin config"
+    path = cli_config or default_cli_config_path()
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "", "none"
+    if not isinstance(data, dict):
+        return "", "none"
+    key = str(data.get("api_key") or "").strip()
+    return (key, "ovcli.conf") if key else ("", "none")
 
 
 class OpenVikingClient:
