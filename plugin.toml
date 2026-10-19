@@ -1,0 +1,69 @@
+[plugin]
+id = "openviking_bridge"
+name = "OpenViking 记忆桥"
+version = "0.1.0"
+type = "plugin"
+description = "把 N.E.K.O 接到本地 OpenViking 记忆服务：语义检索、读取、写入 viking:// 记忆，并把「回忆 / 记住」注册成对话期 LLM 工具。"
+short_description = "Bridge N.E.K.O to a local OpenViking memory service (recall / read / remember)."
+keywords = ["openviking", "记忆", "memory", "viking", "检索", "recall", "长期记忆"]
+entry = "plugin.plugins.openviking_bridge:OpenVikingBridgePlugin"
+
+[plugin.author]
+name = "NavaCloudy"
+
+[plugin.sdk]
+recommended = ">=0.1.0,<0.2.0"
+supported = ">=0.1.0,<0.3.0"
+
+# 静态入口声明：宿主重扫插件时靠这段重建入口列表；
+# 不写的话一次 /plugins/refresh 就会把面板 action 清空。
+# tests/test_manifest.py 校验这里与 @plugin_entry 装饰器一致。
+
+[[plugin.entries]]
+id = "ov_health"
+name = "服务体检"
+description = "检查 OpenViking 服务是否在线，返回版本与认证模式。只读。"
+
+[[plugin.entries]]
+id = "ov_recall"
+name = "回忆检索"
+description = "按语义检索 OpenViking 里的记忆与资料，返回命中的 viking:// 路径与摘要。只读。"
+
+[[plugin.entries]]
+id = "ov_read"
+name = "读取条目"
+description = "读取一个 viking:// 文件的正文，超长按配置截断。只读。"
+
+[[plugin.entries]]
+id = "ov_ls"
+name = "浏览目录"
+description = "列出一个 viking:// 目录下的条目，用来发现可读的路径。只读。"
+
+[[plugin.entries]]
+id = "ov_remember"
+name = "写入记忆"
+description = "把一条记忆写进 OpenViking，只允许写在配置的 memory_root 目录下。会写数据。"
+
+[plugin_runtime]
+enabled = true
+# 常驻：LLM 工具只在插件启动时注册一次，随宿主启动才不会漏掉对话里的「回忆 / 记住」。
+auto_start = true
+
+# ---------------------------------------------------------------------------
+# 业务配置。首次运行会被复制到 <用户数据根目录>/plugins/openviking_bridge/config/plugin.toml，
+# 改那份才生效；改这里只影响新用户。
+# ---------------------------------------------------------------------------
+
+[openviking]
+# OpenViking Server 地址。只允许 http:// 或 https://。
+base_url = "http://127.0.0.1:1933"
+# API Key。留空 = 服务端未开启认证。密钥只放用户数据目录，不要提交进仓库。
+api_key = ""
+# 单次 HTTP 请求超时（秒）。
+timeout_s = 30.0
+# 记忆写入根目录；ov_remember 只会写在这个目录下。
+memory_root = "viking://user/default/memories"
+# 返回给面板与模型的正文、摘要最大字符数。
+max_chars = 2000
+# 检索默认返回条数。
+default_limit = 5

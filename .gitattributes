@@ -1,0 +1,4 @@
+# 统一用 LF 存进仓库：CI 跑在 Linux 上，本地是 Windows。
+# 不写这行的话，Windows 的 autocrlf 会把换行改成 CRLF，
+# 导致每次提交都出现大量「只有换行不同」的假改动。
+* text=auto eol=lf

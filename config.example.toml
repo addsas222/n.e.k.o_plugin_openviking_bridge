@@ -1,0 +1,16 @@
+# 首次运行配置模板。N.E.K.O. 第一次需要运行配置时把它复制到
+# <用户数据根目录>/plugins/openviking_bridge/config/plugin.toml；
+# 若实际配置已存在，不会用本模板覆盖。以后改这里不影响已有用户配置。
+
+[plugin_runtime]
+enabled = true
+auto_start = true
+
+[openviking]
+base_url = "http://127.0.0.1:1933"
+# 把 API Key 填在这里，不要写进仓库。
+api_key = ""
+timeout_s = 30.0
+memory_root = "viking://user/default/memories"
+max_chars = 2000
+default_limit = 5
