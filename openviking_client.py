@@ -121,6 +121,17 @@ class OpenVikingClient:
                 detail = exc.read().decode("utf-8", "replace")[:300]
             except Exception:
                 detail = ""
+            if exc.code in (401, 403):
+                # 这两类错误几乎总是配置问题，直接说清楚该改哪里，
+                # 否则用户只会看到一句 UNAUTHENTICATED，不知道从何下手。
+                raise OpenVikingError(
+                    "OpenViking 拒绝了这次请求（HTTP "
+                    + str(exc.code)
+                    + "）。请在插件配置的 [openviking] 段填写 api_key —— "
+                    + "要用 user/admin key，root key 只能管后台、无法读写记忆。"
+                    + "服务端返回："
+                    + detail
+                ) from None
             raise OpenVikingError("HTTP " + str(exc.code) + " from " + path + ": " + detail) from None
         except urllib.error.URLError as exc:
             raise OpenVikingError("cannot reach OpenViking at " + self.base_url + ": " + str(exc.reason)) from None
