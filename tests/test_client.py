@@ -12,7 +12,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import pytest
 
-from openviking_client import (
+# ovb_client 由 tests/conftest.py 按路径载入（见该文件的说明）；
+# 用这个别名是为了让本地与官方 CI 的 ruff 导入分组判定一致。
+from ovb_client import (
     OpenVikingClient,
     OpenVikingError,
     flatten_hits,
